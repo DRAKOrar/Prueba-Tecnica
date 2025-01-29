@@ -20,6 +20,7 @@ public class ClienteService {
     // Convertir Cliente a ClienteDTO
     private ClienteDTO convertirAClienteDTO(Cliente cliente) {
         ClienteDTO clienteDTO = new ClienteDTO();
+
         clienteDTO.setId(cliente.getId());
         clienteDTO.setTipoIdentificacion(cliente.getTipoIdentificacion());
         clienteDTO.setNumeroIdentificacion(cliente.getNumeroIdentificacion());
@@ -44,10 +45,16 @@ public class ClienteService {
     }
 
     public ClienteDTO crearCliente(ClienteDTO clienteDTO) {
+        if (clienteRepository.existsByNumeroIdentificacion(clienteDTO.getNumeroIdentificacion())) {
+            throw new IllegalArgumentException("El número de identificación ya está registrado");
+        }
         Cliente cliente = convertirACliente(clienteDTO);
+        cliente.setFechaCreacion(LocalDate.now());
+
         cliente = clienteRepository.save(cliente);
         return convertirAClienteDTO(cliente);
     }
+
 
     public Optional<ClienteDTO> obtenerClientePorId(Long id) {
         return clienteRepository.findById(id).map(this::convertirAClienteDTO);
@@ -67,8 +74,17 @@ public class ClienteService {
             cliente.setFechaModificacion(LocalDate.now());
             cliente = clienteRepository.save(cliente);
             return convertirAClienteDTO(cliente);
-        }).orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+        }).orElseThrow(() -> new ClienteNotFoundException("Cliente con ID " + id + " no encontrado"));
     }
+
+    public class ClienteNotFoundException extends RuntimeException {
+        public ClienteNotFoundException(String message) {
+            super(message);
+        }
+    }
+
+
+
 
     public void eliminarCliente(Long id) {
         clienteRepository.deleteById(id);
